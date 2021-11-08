@@ -130,4 +130,4 @@
 
 ## ติดต่อกับเรา
 
-แจ้งปัญหาการใช้งานได้ที่ https://inex.co.th/shop/contact-us/ หรือ https://github.com/maxpromer/iAC/issues
+แจ้งปัญหาการใช้งานได้ที่ https://inex.co.th/shop/contact-us/ หรือ https://github.com/maxpromer/iA-MC3479/issues
