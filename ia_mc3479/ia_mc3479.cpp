@@ -1,7 +1,7 @@
 #ifndef __iAC_CPP__
 #define __iAC_CPP__
 
-#include "iac_mc3479.h"
+#include "ia_mc3479.h"
 #include "esp_log.h"
 
 #define ACC_ADDR 0x6C
@@ -12,18 +12,18 @@ const float ACC_Sensitivity_List[5] = {
 	16384.0,   /* FS @2g */
 	8192.0,    /* FS @4g */
 	4096.0,    /* FS @8g */
-	2048.0,    /* FS @12g */
-	2730.0,    /* FS @16g */
+	2048.0,    /* FS @16g */
+	2730.0,    /* FS @12g */
 };
 
-iac_mc3479::iac_mc3479(int bus_ch, int dev_addr)
+ia_mc3479::ia_mc3479(int bus_ch, int dev_addr)
 {
 	channel = bus_ch;
 	address = dev_addr;
 	polling_ms = 40;
 }
 
-void iac_mc3479::init(void)
+void ia_mc3479::init(void)
 {
 	// Debug
 	esp_log_level_set("*", ESP_LOG_INFO);
@@ -36,44 +36,44 @@ void iac_mc3479::init(void)
 	state = s_detect;
 }
 
-int iac_mc3479::prop_count(void)
+int ia_mc3479::prop_count(void)
 {
 	// not supported
 	return 0;
 }
 
-bool iac_mc3479::prop_name(int index, char *name)
+bool ia_mc3479::prop_name(int index, char *name)
 {
 	// not supported
 	return false;
 }
 
-bool iac_mc3479::prop_unit(int index, char *unit)
+bool ia_mc3479::prop_unit(int index, char *unit)
 {
 	// not supported
 	return false;
 }
 
-bool iac_mc3479::prop_attr(int index, char *attr)
+bool ia_mc3479::prop_attr(int index, char *attr)
 {
 	// not supported
 	return false;
 }
 
-bool iac_mc3479::prop_read(int index, char *value)
+bool ia_mc3479::prop_read(int index, char *value)
 {
 	// not supported
 	return false;
 }
 
-bool iac_mc3479::prop_write(int index, char *value)
+bool ia_mc3479::prop_write(int index, char *value)
 {
 	// not supported
 	return false;
 }
 // --------------------------------------
 
-void iac_mc3479::process(Driver *drv)
+void ia_mc3479::process(Driver *drv)
 {
 	i2c = (I2CDev *)drv;
 	switch (state)
@@ -105,6 +105,14 @@ void iac_mc3479::process(Driver *drv)
 		// Set Full-scale selection
 		buff[0] = 0x20;	// Range and Scale Control register
 		buff[1] = (0 << 7) | (ACCRANGR2FSMODE(acc_range) << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0);
+		if (i2c->write(channel, ACC_ADDR, buff, 2) != ESP_OK)
+		{
+			state = s_error;
+			break;
+		}
+
+  		buff[0] = 0x07;	// Mode Register Controls
+		buff[1] = 0x01; // WAKE. Clocks are running and X, Y, and Z-axis data are acquired at the sample rate
 		if (i2c->write(channel, ACC_ADDR, buff, 2) != ESP_OK)
 		{
 			state = s_error;
@@ -144,6 +152,8 @@ void iac_mc3479::process(Driver *drv)
 				state = s_error;
 				break;
 			}
+
+			ESP_LOGI("iA-MC3479", "Sensor Z: %d, LSB: %.01f", (int16_t)((buff[1] << 8) | buff[0]), ACC_Sensitivity_List[fs_mode]);
 
 			accelerometer[0] = (int16_t)((buff[1] << 8) | buff[0]) / ACC_Sensitivity_List[fs_mode] * 1000.0;
 			accelerometer[1] = (int16_t)((buff[3] << 8) | buff[2]) / ACC_Sensitivity_List[fs_mode] * 1000.0;
@@ -219,12 +229,12 @@ void eventTask(void *arg)
 }
 
 // Method
-void iac_mc3479::on_gesture(motion_event event, GestureHandle cb)
+void ia_mc3479::on_gesture(motion_event event, GestureHandle cb)
 {
 	GestureCallback[(int)event] = cb;
 }
 
-int32_t iac_mc3479::acceleration(acc_meg_axis axis)
+int32_t ia_mc3479::acceleration(acc_meg_axis axis)
 {
 	// ESP_LOGI("iAC", "Acc: %" PRId32 " %" PRId32 " %" PRId32, accelerometer[0], accelerometer[1], accelerometer[2]);
 
@@ -247,7 +257,7 @@ int32_t iac_mc3479::acceleration(acc_meg_axis axis)
 	}
 }
 
-bool iac_mc3479::is_gesture(motion_event event, bool blocking)
+bool ia_mc3479::is_gesture(motion_event event, bool blocking)
 {
 	switch (event)
 	{
@@ -356,7 +366,7 @@ bool iac_mc3479::is_gesture(motion_event event, bool blocking)
 	}
 }
 
-int iac_mc3479::rotation(acc_meg_axis axis)
+int ia_mc3479::rotation(acc_meg_axis axis)
 {
 	double x_g_value = -accelerometer[0] / 1000.0; /* Acceleration in x-direction in g units */
 	double y_g_value = accelerometer[1] / 1000.0; /* Acceleration in y-direction in g units */
@@ -381,20 +391,27 @@ int iac_mc3479::rotation(acc_meg_axis axis)
 	}
 }
 
-void iac_mc3479::accellerometer_range(float range)
+void ia_mc3479::accellerometer_range(uint8_t range)
 {
 	acc_range = range;
 
 	uint8_t buff[2];
 
-	// Set Full-scale selection
-	buff[0] = 0x23;																						   // CTRL_REG4_A
-	buff[1] = (0 << 7) | (0 << 6) | (ACCRANGR2FSMODE(acc_range) << 4) | (0 << 3) | (0b00 << 1) | (0 << 0); //  continuous update, data LSb at lower address,  Full-scale selection, Normal mode, self-test disabled, SPI 3-wire disabled
+	buff[0] = 0x07;	// Mode Register Controls
+	buff[1] = 0x00; // STANDBY. Clocks are not running and X, Y, and Z-axis data are not sampled.
+	i2c->write(channel, address, buff, 2);
 
+	// Set Full-scale selection
+	buff[0] = 0x20;	// Range and Scale Control register
+	buff[1] = (0 << 7) | (ACCRANGR2FSMODE(acc_range) << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0);
+	i2c->write(channel, address, buff, 2);
+
+    buff[0] = 0x07;	// Mode Register Controls
+	buff[1] = 0x01; // WAKE. Clocks are running and X, Y, and Z-axis data are acquired at the sample rate
 	i2c->write(channel, address, buff, 2);
 }
 
-void iac_mc3479::sram_write_byte(int addr, int data)
+void ia_mc3479::sram_write_byte(int addr, int data)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -405,7 +422,7 @@ void iac_mc3479::sram_write_byte(int addr, int data)
 	i2c->write(0, 0x6F, buff, 2);
 }
 
-void iac_mc3479::sram_write_byte(int addr, void *data)
+void ia_mc3479::sram_write_byte(int addr, void *data)
 {
 	if (!data)
 		return;
@@ -413,7 +430,7 @@ void iac_mc3479::sram_write_byte(int addr, void *data)
 	sram_write_byte(addr, (int)((uint8_t *)data)[0]);
 }
 
-int iac_mc3479::sram_read_byte(int addr)
+int ia_mc3479::sram_read_byte(int addr)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -427,7 +444,7 @@ int iac_mc3479::sram_read_byte(int addr)
 	return data;
 }
 
-void iac_mc3479::sram_write_word(int addr, int16_t data)
+void ia_mc3479::sram_write_word(int addr, int16_t data)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -439,7 +456,7 @@ void iac_mc3479::sram_write_word(int addr, int16_t data)
 	i2c->write(0, 0x6F, buff, 3);
 }
 
-void iac_mc3479::sram_write_word(int addr, void *data)
+void ia_mc3479::sram_write_word(int addr, void *data)
 {
 	if (!data)
 		return;
@@ -447,7 +464,7 @@ void iac_mc3479::sram_write_word(int addr, void *data)
 	sram_write_word(addr, (int16_t)((int16_t *)data)[0]);
 }
 
-int16_t iac_mc3479::sram_read_word(int addr)
+int16_t ia_mc3479::sram_read_word(int addr)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -461,7 +478,7 @@ int16_t iac_mc3479::sram_read_word(int addr)
 	return data;
 }
 
-void iac_mc3479::sram_write_dword(int addr, int32_t data)
+void ia_mc3479::sram_write_dword(int addr, int32_t data)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -474,7 +491,7 @@ void iac_mc3479::sram_write_dword(int addr, int32_t data)
 	i2c->write(0, 0x6F, buff, 5);
 }
 
-void iac_mc3479::sram_write_dword(int addr, void *data)
+void ia_mc3479::sram_write_dword(int addr, void *data)
 {
 	if (!data)
 		return;
@@ -482,7 +499,7 @@ void iac_mc3479::sram_write_dword(int addr, void *data)
 	sram_write_dword(addr, (int32_t)((int32_t *)data)[0]);
 }
 
-int32_t iac_mc3479::sram_read_dword(int addr)
+int32_t ia_mc3479::sram_read_dword(int addr)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -496,7 +513,7 @@ int32_t iac_mc3479::sram_read_dword(int addr)
 	return data;
 }
 
-void iac_mc3479::sram_write_block(int addr, uint8_t *data, uint8_t size)
+void ia_mc3479::sram_write_block(int addr, uint8_t *data, uint8_t size)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -509,7 +526,7 @@ void iac_mc3479::sram_write_block(int addr, uint8_t *data, uint8_t size)
 	i2c->write(0, 0x6F, buff, 1 + size);
 }
 
-void iac_mc3479::sram_read_block(int addr, uint8_t *data, uint8_t size)
+void ia_mc3479::sram_read_block(int addr, uint8_t *data, uint8_t size)
 {
 	if (addr < 0 || addr > 63)
 	{
@@ -520,7 +537,7 @@ void iac_mc3479::sram_read_block(int addr, uint8_t *data, uint8_t size)
 	i2c->read(0, 0x6F, (uint8_t *)&addr, 1, data, size);
 }
 
-void iac_mc3479::eeprom_write_byte(int addr, int data)
+void ia_mc3479::eeprom_write_byte(int addr, int data)
 {
 	if (addr < 0 || addr > 127)
 	{
@@ -532,7 +549,7 @@ void iac_mc3479::eeprom_write_byte(int addr, int data)
 	vTaskDelay(20 / portTICK_RATE_MS);
 }
 
-void iac_mc3479::eeprom_write_byte(int addr, void *data)
+void ia_mc3479::eeprom_write_byte(int addr, void *data)
 {
 	if (!data)
 		return;
@@ -540,7 +557,7 @@ void iac_mc3479::eeprom_write_byte(int addr, void *data)
 	eeprom_write_byte(addr, (int)((uint8_t *)data)[0]);
 }
 
-int iac_mc3479::eeprom_read_byte(int addr)
+int ia_mc3479::eeprom_read_byte(int addr)
 {
 	if (addr < 0 || addr > 127)
 	{
@@ -553,7 +570,7 @@ int iac_mc3479::eeprom_read_byte(int addr)
 	return data;
 }
 
-void iac_mc3479::eeprom_write_word(int addr, int16_t data)
+void ia_mc3479::eeprom_write_word(int addr, int16_t data)
 {
 	if (addr < 0 || addr > 127)
 	{
@@ -566,7 +583,7 @@ void iac_mc3479::eeprom_write_word(int addr, int16_t data)
 	vTaskDelay(20 / portTICK_RATE_MS);
 }
 
-void iac_mc3479::eeprom_write_word(int addr, void *data)
+void ia_mc3479::eeprom_write_word(int addr, void *data)
 {
 	if (!data)
 		return;
@@ -574,7 +591,7 @@ void iac_mc3479::eeprom_write_word(int addr, void *data)
 	eeprom_write_word(addr, (int16_t)((int16_t *)data)[0]);
 }
 
-int16_t iac_mc3479::eeprom_read_word(int addr)
+int16_t ia_mc3479::eeprom_read_word(int addr)
 {
 	if (addr < 0 || addr > 127)
 	{
@@ -587,7 +604,7 @@ int16_t iac_mc3479::eeprom_read_word(int addr)
 	return data;
 }
 
-void iac_mc3479::eeprom_write_dword(int addr, int32_t data)
+void ia_mc3479::eeprom_write_dword(int addr, int32_t data)
 {
 	if (addr < 0 || addr > 127)
 	{
@@ -600,7 +617,7 @@ void iac_mc3479::eeprom_write_dword(int addr, int32_t data)
 	vTaskDelay(20 / portTICK_RATE_MS);
 }
 
-void iac_mc3479::eeprom_write_dword(int addr, void *data)
+void ia_mc3479::eeprom_write_dword(int addr, void *data)
 {
 	if (!data)
 		return;
@@ -608,7 +625,7 @@ void iac_mc3479::eeprom_write_dword(int addr, void *data)
 	eeprom_write_dword(addr, (int32_t)((int32_t *)data)[0]);
 }
 
-int32_t iac_mc3479::eeprom_read_dword(int addr)
+int32_t ia_mc3479::eeprom_read_dword(int addr)
 {
 	if (addr < 0 || addr > 127)
 	{

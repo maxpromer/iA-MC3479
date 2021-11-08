@@ -1,7 +1,7 @@
-Blockly.Blocks['iac_mc33479_on_gesture'] = {
+Blockly.Blocks['ia_mc33479_on_gesture'] = {
 	init: function () {
 		this.jsonInit({
-			"type": "iac_mc33479_on_gesture",
+			"type": "ia_mc33479_on_gesture",
 			"message0": Blockly.Msg.IA_MC33479_ON_GESTURE_MESSAGE,
 			"args0": [
 				{
@@ -71,10 +71,10 @@ Blockly.Blocks['iac_mc33479_on_gesture'] = {
 	}
 };
 
-Blockly.Blocks['iac_mc33479_acceleration'] = {
+Blockly.Blocks['ia_mc33479_acceleration'] = {
 	init: function () {
 		this.jsonInit({
-			"type": "iac_mc33479_acceleration",
+			"type": "ia_mc33479_acceleration",
 			"message0": Blockly.Msg.IA_MC33479_ACCELERATION_MESSAGE,
 			"args0": [
 				{
@@ -108,10 +108,10 @@ Blockly.Blocks['iac_mc33479_acceleration'] = {
 	}
 };
 
-Blockly.Blocks['iac_mc33479_is_gesture'] = {
+Blockly.Blocks['ia_mc33479_is_gesture'] = {
 	init: function () {
 		this.jsonInit({
-			"type": "iac_mc33479_is_gesture",
+			"type": "ia_mc33479_is_gesture",
 			"message0": Blockly.Msg.IA_MC33479_IS_GESTURE_MESSAGE,
 			"args0": [
 				{
@@ -173,10 +173,10 @@ Blockly.Blocks['iac_mc33479_is_gesture'] = {
 	}
 };
 
-Blockly.Blocks['iac_mc33479_rotation'] = {
+Blockly.Blocks['ia_mc33479_rotation'] = {
 	init: function () {
 		this.jsonInit({
-			"type": "iac_mc33479_rotation",
+			"type": "ia_mc33479_rotation",
 			"message0": Blockly.Msg.IA_MC33479_ROTATION_MESSAGE,
 			"args0": [
 				{
@@ -202,10 +202,10 @@ Blockly.Blocks['iac_mc33479_rotation'] = {
 	}
 };
 
-Blockly.Blocks['iac_mc33479_set_accellerometer_range'] = {
+Blockly.Blocks['ia_mc33479_set_accellerometer_range'] = {
 	init: function () {
 		this.jsonInit({
-			"type": "iac_mc33479_set_accellerometer_range",
+			"type": "ia_mc33479_set_accellerometer_range",
 			"message0": Blockly.Msg.IA_MC33479_SET_ACCELLEROMETER_MESSAGE,
 			"args0": [
 				{

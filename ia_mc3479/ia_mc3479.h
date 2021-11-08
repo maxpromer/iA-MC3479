@@ -47,7 +47,7 @@ static bool callbackReadyFlag[11];
 
 void eventTask(void *arg);
 
-class iac_mc3479 : public Device
+class ia_mc3479 : public Device
 {
 private:
 	enum
@@ -72,7 +72,7 @@ private:
 
 public:
 	// constructor
-	iac_mc3479(int bus_ch, int dev_addr);
+	ia_mc3479(int bus_ch, int dev_addr);
 
 	// override
 	void init(void);
@@ -87,12 +87,9 @@ public:
 	// method
 	void on_gesture(motion_event event, GestureHandle cb);
 	int32_t acceleration(acc_meg_axis axis);
-	int compass_heading(HT16K33 *);
 	bool is_gesture(motion_event event, bool blocking = true);
 	int rotation(acc_meg_axis axis);
-	double magnetic_force(acc_meg_axis axis);
-	void calibrate_compass(HT16K33 *);
-	void accellerometer_range(float range);
+	void accellerometer_range(uint8_t range);
 
 	// SRAM on RTC
 	void sram_write_byte(int, int);
