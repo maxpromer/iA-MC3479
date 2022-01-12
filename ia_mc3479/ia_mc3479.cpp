@@ -244,7 +244,7 @@ int32_t ia_mc3479::acceleration(acc_meg_axis axis)
 		return -accelerometer[0];
 
 	case AXIS_Y:
-		return accelerometer[1];
+		return -accelerometer[1];
 
 	case AXIS_Z:
 		return accelerometer[2];
